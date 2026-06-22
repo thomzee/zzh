@@ -144,11 +144,12 @@ main() {
 
   echo "zzh connecting to ${name} (${user}@${host})"
   zzh_set_title "$name"
-  # Run as a child (not exec) so we can clear the badge when the session ends.
+  # Clear the badge/title on ANY exit — normal logout, Ctrl-C, dropped
+  # connection, or kill — so the local terminal is never left with a stale
+  # badge. Run ssh as a child (not exec) so this cleanup can run.
+  trap 'zzh_clear_title' EXIT INT TERM HUP
   "${ZZH_ARGV[@]}"
-  local rc=$?
-  zzh_clear_title
-  exit "$rc"
+  exit "$?"
 }
 
 # Run main only when executed directly, not when sourced.
