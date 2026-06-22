@@ -59,6 +59,31 @@ else
   ok "password auth fails without sshpass"
 fi
 
+# ── set_title / clear_title ────────────────────────────────────────────────
+out="$(TERM_PROGRAM=iTerm.app zzh_set_title "myserver")"
+case "$out" in
+  *myserver*) ok "set_title sets tab title to name" ;;
+  *) no "set_title sets tab title to name" "got [$out]" ;;
+esac
+badge="$(printf '%s' "myserver" | base64)"
+case "$out" in
+  *"$badge"*) ok "set_title emits iTerm badge (base64 name)" ;;
+  *) no "set_title emits iTerm badge (base64 name)" "missing [$badge] in [$out]" ;;
+esac
+# non-iTerm: still sets the tab title, but no badge sequence
+out="$(TERM_PROGRAM=Apple_Terminal zzh_set_title "myserver")"
+case "$out" in
+  *SetBadgeFormat*) no "non-iTerm skips badge" "unexpected badge in [$out]" ;;
+  *myserver*) ok "non-iTerm still sets tab title" ;;
+  *) no "non-iTerm still sets tab title" "got [$out]" ;;
+esac
+# clear_title emits a SetBadgeFormat (to empty) under iTerm
+out="$(TERM_PROGRAM=iTerm.app zzh_clear_title)"
+case "$out" in
+  *SetBadgeFormat*) ok "clear_title clears iTerm badge" ;;
+  *) no "clear_title clears iTerm badge" "got [$out]" ;;
+esac
+
 # ── config_creds_file ──────────────────────────────────────────────────────
 tmp="$(mktemp)"
 printf 'credsFile: "/tmp/creds.json"\n' >"$tmp"

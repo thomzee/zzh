@@ -59,6 +59,26 @@ build_ssh_command() {
   fi
 }
 
+# zzh_set_title NAME — label the terminal with the server NAME.
+# Sets the tab/window title (baseline; a remote shell may overwrite it) and,
+# under iTerm2, a badge: a large translucent watermark that persists for the
+# whole session regardless of what the remote shell does.
+zzh_set_title() {
+  local name="$1"
+  printf '\033]0;%s\007' "$name"
+  if [[ "${TERM_PROGRAM:-}" == "iTerm.app" ]]; then
+    printf '\033]1337;SetBadgeFormat=%s\007' "$(printf '%s' "$name" | base64)"
+  fi
+}
+
+# zzh_clear_title — undo zzh_set_title (clear tab title and iTerm badge).
+zzh_clear_title() {
+  printf '\033]0;\007'
+  if [[ "${TERM_PROGRAM:-}" == "iTerm.app" ]]; then
+    printf '\033]1337;SetBadgeFormat=%s\007' ""
+  fi
+}
+
 # config_creds_file YAML_FILE — echo the credsFile value (quotes stripped).
 config_creds_file() {
   local file="$1"
@@ -122,8 +142,13 @@ main() {
 
   build_ssh_command "$name" "$host" "$user" "$port" "$password" "$keypath" || exit 1
 
-  echo "zzh connecting to ${user}@${host}"
-  exec "${ZZH_ARGV[@]}"
+  echo "zzh connecting to ${name} (${user}@${host})"
+  zzh_set_title "$name"
+  # Run as a child (not exec) so we can clear the badge when the session ends.
+  "${ZZH_ARGV[@]}"
+  local rc=$?
+  zzh_clear_title
+  exit "$rc"
 }
 
 # Run main only when executed directly, not when sourced.
