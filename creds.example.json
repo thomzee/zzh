@@ -1,0 +1,21 @@
+[
+  {
+    "name": "prod-web",
+    "host": "10.0.0.5",
+    "port": 22,
+    "user": "deploy",
+    "password": "change-me"
+  },
+  {
+    "name": "staging",
+    "host": "staging.example.com",
+    "port": 2222,
+    "user": "ubuntu",
+    "keyPath": "~/.ssh/id_ed25519"
+  },
+  {
+    "name": "bastion",
+    "host": "bastion.example.com",
+    "user": "admin"
+  }
+]

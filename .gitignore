@@ -1,0 +1,6 @@
+# secrets — never commit
+creds.json
+.zzh.yaml
+
+# misc
+.DS_Store
