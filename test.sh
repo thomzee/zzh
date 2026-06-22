@@ -92,6 +92,27 @@ printf 'credsFile: /tmp/bare.json\n' >"$tmp"
 assert_eq "config bare value" "/tmp/bare.json" "$(config_creds_file "$tmp")"
 rm -f "$tmp"
 
+# ── _zzh_first_existing ─────────────────────────────────────────────────────
+d="$(mktemp -d)"
+touch "$d/real"
+assert_eq "first_existing picks first present" "$d/real" "$(_zzh_first_existing "$d/nope1" "$d/real" "$d/nope2")"
+if _zzh_first_existing "$d/nope1" "$d/nope2" >/dev/null; then
+  no "first_existing returns non-zero when none exist" "expected failure"
+else
+  ok "first_existing returns non-zero when none exist"
+fi
+rm -rf "$d"
+
+# ── _zzh_resolve_dir (follows symlinks to the real script dir) ──────────────
+# normalize to physical paths (macOS /var -> /private/var) since resolve_dir
+# returns `pwd -P`
+real="$(cd "$(mktemp -d)" && pwd -P)"; link="$(cd "$(mktemp -d)" && pwd -P)"
+touch "$real/zzh.sh"
+ln -s "$real/zzh.sh" "$link/zzh"
+assert_eq "resolve_dir follows symlink" "$real" "$(_zzh_resolve_dir "$link/zzh")"
+assert_eq "resolve_dir on real file" "$real" "$(_zzh_resolve_dir "$real/zzh.sh")"
+rm -rf "$real" "$link"
+
 # ── summary ─────────────────────────────────────────────────────────────────
 echo
 echo "passed: $pass  failed: $fail"

@@ -93,13 +93,38 @@ config_creds_file() {
 
 # ── config discovery & loading ──────────────────────────────────────────────
 
-# find_config — echo path to the first .zzh.yaml found (script dir, then cwd).
+# _zzh_first_existing FILE... — echo the first FILE that exists; non-zero if none.
+_zzh_first_existing() {
+  local f
+  for f in "$@"; do
+    [[ -f "$f" ]] && { echo "$f"; return 0; }
+  done
+  return 1
+}
+
+# _zzh_resolve_dir SRC — resolve SRC through any symlinks and echo the directory
+# of the real file. Lets zzh find its repo config even when invoked via a
+# symlink on PATH (e.g. /opt/homebrew/bin/zzh -> .../riset/zzh/zzh.sh).
+_zzh_resolve_dir() {
+  local src="$1" dir
+  while [[ -h "$src" ]]; do
+    dir="$(cd -P "$(dirname "$src")" >/dev/null 2>&1 && pwd)"
+    src="$(readlink "$src")"
+    [[ "$src" != /* ]] && src="$dir/$src"
+  done
+  cd -P "$(dirname "$src")" >/dev/null 2>&1 && pwd
+}
+
+# find_config — echo the first .zzh.yaml found, searching (in order): the real
+# script directory, $HOME, $XDG_CONFIG_HOME/zzh, then the current directory.
 find_config() {
   local script_dir
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  if [[ -f "$script_dir/.zzh.yaml" ]]; then echo "$script_dir/.zzh.yaml"; return 0; fi
-  if [[ -f "./.zzh.yaml" ]]; then echo "./.zzh.yaml"; return 0; fi
-  return 1
+  script_dir="$(_zzh_resolve_dir "${BASH_SOURCE[0]}")"
+  _zzh_first_existing \
+    "$script_dir/.zzh.yaml" \
+    "$HOME/.zzh.yaml" \
+    "${XDG_CONFIG_HOME:-$HOME/.config}/zzh/config.yaml" \
+    "./.zzh.yaml"
 }
 
 # ── main ────────────────────────────────────────────────────────────────────

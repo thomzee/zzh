@@ -1,9 +1,11 @@
-# zzh (bash)
+# zzh
 
-A fast **SSH server launcher for your terminal** — bash port of the Go
-[`../zzh`](../zzh). Pick a server from an [`fzf`](https://github.com/junegunn/fzf)
-fuzzy list and it hands off to a live `ssh` session. Same `creds.json` schema
-and `.zzh.yaml` config as its Go sibling.
+A fast **SSH server launcher for your terminal**. Pick a server from an
+[`fzf`](https://github.com/junegunn/fzf) fuzzy list and it hands off to a live
+`ssh` session — no more remembering hosts, ports, users, and key paths.
+
+> A Go implementation of the same idea lives in [`../zzh-go`](../zzh-go); this
+> bash version is the primary one.
 
 ```
 ssh > prod
@@ -12,6 +14,11 @@ ssh > prod
   staging    ubuntu@staging.example.com
   bastion    admin@bastion.example.com
 ```
+
+When connected, the server name is shown in the terminal **tab/window title**
+(macOS Terminal.app, Linux terminals, iTerm) and, under **iTerm2**, as a
+**badge** watermark — so you always know which host you're on. Both are cleared
+when the session ends (including on Ctrl-C or a dropped connection).
 
 ## Requirements
 
@@ -23,12 +30,20 @@ ssh > prod
 
 ## How it works
 
-`zzh.sh` reads a `.zzh.yaml` (looked up next to the script, then in the current
-directory) containing a single `credsFile` pointing at your server list:
+`zzh` reads a `.zzh.yaml` config containing a single `credsFile` pointing at
+your server list:
 
 ```yaml
 credsFile: "/Users/you/.zzh-creds.json"
 ```
+
+The config is searched for in this order (first match wins):
+
+1. The directory of the `zzh` script (symlinks are resolved, so a symlinked
+   `zzh` on your PATH still finds the config next to the real script)
+2. `~/.zzh.yaml`
+3. `$XDG_CONFIG_HOME/zzh/config.yaml` (defaults to `~/.config/zzh/config.yaml`)
+4. `./.zzh.yaml` in the current directory
 
 `creds.json` is an array of servers:
 
@@ -55,23 +70,32 @@ Connection is chosen per server by which field is set:
 2. `password` → `sshpass -p <password> ssh -p <port> user@host`
 3. neither → `ssh -p <port> user@host`
 
-On selection the script `exec`s ssh, replacing itself, so you land in a fully
-interactive remote shell; back to your prompt when the session ends.
+On selection the script runs ssh, dropping you into the remote shell; you're
+back at your prompt when the session ends.
 
-## Install
+## Install (run `zzh` from anywhere)
+
+Symlink the script into a directory on your PATH:
 
 ```bash
-chmod +x zzh.sh
-sudo cp zzh.sh /usr/local/bin/zzh        # optional: put it on PATH
+# macOS (Apple Silicon Homebrew)
+ln -sf "$PWD/zzh.sh" /opt/homebrew/bin/zzh
 
+# Intel macOS / Linux
+ln -sf "$PWD/zzh.sh" /usr/local/bin/zzh    # may need sudo
+```
+
+Then set up your server list and config:
+
+```bash
 cp creds.example.json ~/.zzh-creds.json
 chmod 600 ~/.zzh-creds.json
 $EDITOR ~/.zzh-creds.json
 
-# config next to the script (or in your working dir)
-printf 'credsFile: "%s/.zzh-creds.json"\n' "$HOME" > /usr/local/bin/.zzh.yaml
+# put the config next to the script (or use ~/.zzh.yaml)
+printf 'credsFile: "%s/.zzh-creds.json"\n' "$HOME" > .zzh.yaml
 
-zzh
+zzh   # from any directory
 ```
 
 ## Security
