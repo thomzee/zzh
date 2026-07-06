@@ -70,6 +70,13 @@ Connection is chosen per server by which field is set:
 2. `password` → `sshpass -p <password> ssh -p <port> user@host`
 3. neither → `ssh -p <port> user@host`
 
+Every connection is made with `-o StrictHostKeyChecking=accept-new`, so the
+**first** time you connect to a host its key is trusted and saved to
+`~/.ssh/known_hosts` automatically — no `yes/no` prompt (which `zzh` can't
+answer, since it hands off to `ssh` only after `fzf` has taken over stdin). If a
+host's key ever *changes*, the connection is still refused, keeping the usual
+trust-on-first-use protection against man-in-the-middle attacks.
+
 On selection the script runs ssh, dropping you into the remote shell; you're
 back at your prompt when the session ends.
 
@@ -102,6 +109,10 @@ zzh   # from any directory
 
 - `creds.json` may contain plaintext passwords — keep it `chmod 600` and never
   commit it (it's git-ignored). Prefer `keyPath` over `password`.
+- Host keys are accepted on first use (`StrictHostKeyChecking=accept-new`) and
+  pinned in `known_hosts`; a later key *change* aborts the connection. If you
+  need to re-trust a host after a legitimate rebuild, remove its old entry with
+  `ssh-keygen -R <host>`.
 
 ## Development
 

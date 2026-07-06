@@ -38,24 +38,32 @@ _zzh_have_sshpass() { command -v sshpass >/dev/null 2>&1; }
 # build_ssh_command NAME HOST USER PORT PASSWORD KEYPATH
 # Populates globals ZZH_BIN and ZZH_ARGV with the command to exec.
 # Returns non-zero (with a message on stderr) if it cannot build one.
+#
+# All ssh invocations pass StrictHostKeyChecking=accept-new: on the first
+# connection to a host the key is trusted and recorded in known_hosts without
+# an interactive prompt (which zzh can't answer — it hands off to ssh after
+# fzf has consumed stdin, so the usual yes/no prompt would fail with "Host key
+# verification failed"). A *changed* key is still refused, preserving the
+# trust-on-first-use protection against MITM.
 build_ssh_command() {
   local name="$1" host="$2" user="$3" port="$4" password="$5" keypath="$6"
   port="$(server_port "$port")"
   local target="${user}@${host}"
+  local -a ssh_opts=(-o StrictHostKeyChecking=accept-new)
 
   if [[ -n "$keypath" ]]; then
     ZZH_BIN="ssh"
-    ZZH_ARGV=(ssh -i "$(expand_home "$keypath")" -p "$port" "$target")
+    ZZH_ARGV=(ssh "${ssh_opts[@]}" -i "$(expand_home "$keypath")" -p "$port" "$target")
   elif [[ -n "$password" ]]; then
     if ! _zzh_have_sshpass; then
       echo "error: sshpass not found on PATH (needed for password auth on \"$name\"); install it or use a keyPath" >&2
       return 1
     fi
     ZZH_BIN="sshpass"
-    ZZH_ARGV=(sshpass -p "$password" ssh -p "$port" "$target")
+    ZZH_ARGV=(sshpass -p "$password" ssh "${ssh_opts[@]}" -p "$port" "$target")
   else
     ZZH_BIN="ssh"
-    ZZH_ARGV=(ssh -p "$port" "$target")
+    ZZH_ARGV=(ssh "${ssh_opts[@]}" -p "$port" "$target")
   fi
 }
 

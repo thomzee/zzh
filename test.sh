@@ -34,22 +34,22 @@ assert_eq "expand_home empty" "" "$(expand_home "")"
 # ── build_ssh_command: key auth ────────────────────────────────────────────
 build_ssh_command "prod" "h" "u" "2222" "" "/keys/id"
 assert_eq "key auth bin" "ssh" "$ZZH_BIN"
-assert_argv "key auth argv" "ssh -i /keys/id -p 2222 u@h"
+assert_argv "key auth argv" "ssh -o StrictHostKeyChecking=accept-new -i /keys/id -p 2222 u@h"
 
 # ── build_ssh_command: key auth expands ~ ──────────────────────────────────
 build_ssh_command "prod" "h" "u" "" "" "~/id"
-assert_argv "key auth expands home" "ssh -i $HOME/id -p 22 u@h"
+assert_argv "key auth expands home" "ssh -o StrictHostKeyChecking=accept-new -i $HOME/id -p 22 u@h"
 
 # ── build_ssh_command: no auth ─────────────────────────────────────────────
 build_ssh_command "bastion" "h" "u" "2200" "" ""
 assert_eq "no auth bin" "ssh" "$ZZH_BIN"
-assert_argv "no auth argv" "ssh -p 2200 u@h"
+assert_argv "no auth argv" "ssh -o StrictHostKeyChecking=accept-new -p 2200 u@h"
 
 # ── build_ssh_command: password auth (sshpass present) ─────────────────────
 _zzh_have_sshpass() { return 0; }
 build_ssh_command "prod" "h" "u" "22" "pw" ""
 assert_eq "password auth bin" "sshpass" "$ZZH_BIN"
-assert_argv "password auth argv" "sshpass -p pw ssh -p 22 u@h"
+assert_argv "password auth argv" "sshpass -p pw ssh -o StrictHostKeyChecking=accept-new -p 22 u@h"
 
 # ── build_ssh_command: password auth (sshpass missing) ─────────────────────
 _zzh_have_sshpass() { return 1; }
